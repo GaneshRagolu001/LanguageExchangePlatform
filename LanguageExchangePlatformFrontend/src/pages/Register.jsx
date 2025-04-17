@@ -28,27 +28,31 @@ function Register() {
   }, [dispatch, userCred]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen bg-[#2E2B3A] flex items-center justify-center p-6">
+      <div className="w-full max-w-5xl bg-white rounded-2xl overflow-hidden flex shadow-xl">
+        {/* Left side with image and tagline */}
+        <div className="hidden md:block w-5/12 bg-[url('loginpic.jpeg')]  bg-cover bg-center text-white p-12 relative ">
+          <div className="absolute top-6 left-6">
+            <h1 className="text-xl font-bold">LinguaLink</h1>
+          </div>
+          <div className="flex flex-col justify-end h-full pb-8">
+            <h2 className="text-2xl font-bold mb-2">Bridging Cultures,</h2>
+            <h2 className="text-2xl font-bold mb-2">Speaking Connections</h2>
+          </div>
+        </div>
+
+        {/* Right side with form */}
+        <div className="w-full md:w-7/12 p-8 md:p-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-1">
             Create an account
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Join us today and get started
-          </p>
-        </div>
-        <RegisterForm />
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-500 mb-6">
             Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Sign in
+            <Link to="/login" className="text-indigo-600 font-medium">
+              Log in
             </Link>
           </p>
+          <RegisterForm />
         </div>
       </div>
     </div>

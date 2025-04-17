@@ -1,9 +1,9 @@
 <?php
+require_once __DIR__ . '/../../helpers/cors.php';
 require_once __DIR__ . '/../../controllers/UserController.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/response.php';
 require_once __DIR__ . '/../auth/authenticate.php';
-require_once __DIR__ . '/../../helpers/cors.php'; 
 
 $userId = authenticate();
 

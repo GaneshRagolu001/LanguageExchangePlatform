@@ -75,6 +75,36 @@ class User
         return $stmt->execute($params);
     }
 
+    public function createConnection($user_id, $connection_id)
+    {
+        // Helper to update one direction
+        $updateConnection = function ($source_id, $target_id) {
+            $query = "SELECT connected_user_ids FROM users WHERE id = ?";
+            $stmt = $this->con->prepare($query);
+            $stmt->execute([$source_id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $connectedIds = isset($row['connected_user_ids']) ? json_decode($row['connected_user_ids'], true) : [];
+
+            if (!in_array($target_id, $connectedIds)) {
+                $connectedIds[] = $target_id;
+                $updatedJson = json_encode($connectedIds);
+
+                $updateQuery = "UPDATE users SET connected_user_ids = ? WHERE id = ?";
+                $updateStmt = $this->con->prepare($updateQuery);
+                return $updateStmt->execute([$updatedJson, $source_id]);
+            }
+
+            return true;
+        };
+
+        // Run in both directions
+        $success1 = $updateConnection($user_id, $connection_id);
+        $success2 = $updateConnection($connection_id, $user_id);
+
+        return $success1 && $success2;
+    }
+
     public function findMatches($user_id)
     {
         $stmt = $this->con->prepare("SELECT native_language, learning_language FROM users WHERE id = ?");
@@ -86,7 +116,7 @@ class User
         $native = $user['native_language'];
         $learning = $user['learning_language'];
 
-        echo "Looking for users who speak '$learning' and want to learn '$native'<br>";
+
 
         $matchStmt = $this->con->prepare("
         SELECT id, name, email, native_language, learning_language, bio
@@ -100,8 +130,49 @@ class User
 
         $results =  $matchStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        echo "Found " . count($results) . " matches<br>";
 
         return $results;
+    }
+
+    public function getConnections($userId)
+    {
+        // Step 1: Fetch the user's connections
+        $stmt = $this->con->prepare("SELECT connected_user_ids FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || empty($row['connected_user_ids'])) {
+            return [];
+        }
+
+        // Decode and filter
+        $connectedIds = json_decode($row['connected_user_ids'], true);
+
+        if (!is_array($connectedIds)) {
+            return [];
+        }
+
+        // Filter out null or invalid IDs, and reindex array
+        $filteredIds = array_values(array_filter($connectedIds, function ($id) {
+            return is_numeric($id) && $id !== null;
+        }));
+
+        if (empty($filteredIds)) {
+            return [];
+        }
+
+        // Step 2: Prepare query with dynamic placeholders
+        $placeholders = implode(',', array_fill(0, count($filteredIds), '?'));
+
+        $query = "
+            SELECT id, name, email, native_language, learning_language, bio, profile_picture, interests, location
+            FROM users
+            WHERE id IN ($placeholders)
+        ";
+
+        $stmt = $this->con->prepare($query);
+        $stmt->execute($filteredIds); // Now the number of placeholders matches the parameters
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

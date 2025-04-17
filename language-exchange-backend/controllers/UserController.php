@@ -45,6 +45,29 @@ class UserController
         }
     }
 
+    public function createConnection($userId, $connection_id)
+    {
+        $created = $this->usermodel->createConnection($userId, $connection_id);
+
+        if ($created) {
+            return ['success' => true, 'message' => 'connection created'. $created];
+        } else {
+
+            return ['success' => false, 'error' => 'profile updation failed'];
+        }
+    }
+    public function getConnections($userId)
+    {
+        $connections = $this->usermodel->getConnections($userId);
+
+        if ($connections) {
+            return ['success' => true, 'data' => $connections ];
+        } else {
+
+            return ['success' => false, 'error' => 'retrieving connections failed'];
+        }
+    }
+
     public function matchUsers($userId)
     {
         return $this->usermodel->findMatches($userId);

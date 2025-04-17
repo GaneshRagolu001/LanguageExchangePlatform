@@ -222,7 +222,7 @@ export default function HomePage() {
                 Go to Dashboard
               </Link>
               <Link
-                to="/match"
+                to="/findpartners"
                 className="inline-flex items-center justify-center px-6 py-3 border border-blue-600 text-base font-medium rounded-md text-blue-700 bg-white hover:bg-gray-100"
               >
                 Find a Language Partner

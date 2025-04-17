@@ -2,20 +2,38 @@ import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../services/authService";
+import { isTokenExpired } from "../services/TokenService";
+import { useDispatch, useSelector } from "react-redux";
+import { loginActions } from "../store/auth/loginSlice";
+import { useParams } from "react-router-dom";
 
 export default function Profile() {
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const location = useLocation();
+  const dispatch = useDispatch();
+
   const isEditRoute = location.pathname === "/profile/edit";
+  const userdetails = useSelector((state) => state.login.user);
+  const params = useParams();
+  const parterId = params.id;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const userId = 10;
+        if (isTokenExpired(token)) {
+          dispatch(loginActions.logout());
+        }
+
+        var userId = userdetails.id;
+        console.log(userdetails.id);
+
+        if (parterId) {
+          userId = parterId;
+        }
 
         const response = await axios.get(
           `${BASE_URL}/user/getProfile.php?id=${userId}`,
@@ -41,7 +59,7 @@ export default function Profile() {
     };
 
     fetchProfile();
-  }, []);
+  }, [dispatch, userdetails, location.state?.updated, parterId]);
 
   if (loading) {
     return (
@@ -109,12 +127,14 @@ export default function Profile() {
                     Personal details and language preferences
                   </p>
                 </div>
-                <Link
-                  to="/profile/edit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Edit Profile
-                </Link>
+                {!parterId && (
+                  <Link
+                    to="/profile/edit"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Edit Profile
+                  </Link>
+                )}
               </div>
 
               <div className="border-t border-gray-200">
@@ -122,18 +142,9 @@ export default function Profile() {
                   {/* Profile Picture */}
                   <div className="px-4 py-5 sm:p-6 sm:w-1/3 flex flex-col items-center">
                     <div className="h-40 w-40 rounded-full overflow-hidden bg-gray-100 mb-4">
-                      {console.log(`${BASE_URL}/${user.profile_picture}`)}
-                      {user?.profile_picture ? (
-                        <img
-                          src={`${BASE_URL}/${user.profile_picture}`}
-                          alt={user.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 text-3xl font-bold">
-                          {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                        </div>
-                      )}
+                      <div className="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 text-3xl font-bold">
+                        {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                      </div>
                     </div>
                     <p className="text-xl font-bold text-gray-900">
                       {user?.name}

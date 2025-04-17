@@ -23,6 +23,7 @@ const initialState = {
     created_at: null,
     interests: null,
     location: null,
+    connected_user_ids: [],
   },
   loginDetails: {
     email: null,
@@ -54,6 +55,16 @@ const loginSlice = createSlice({
     logout(state) {
       localStorage.clear();
       state.logedIn = false;
+    },
+    addConection(state, action) {
+      if (!Array.isArray(state.user.connected_user_ids)) {
+        state.user.connected_user_ids = [];
+      }
+
+      if (!state.user.connected_user_ids.includes(action.payload)) {
+        state.user.connected_user_ids.push(action.payload);
+        localStorage.setItem("user", JSON.stringify(state.user)); // persist updated user
+      }
     },
   },
 });

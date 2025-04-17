@@ -2,9 +2,15 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../services/authService";
+import { isTokenExpired } from "../services/TokenService";
+import { useDispatch, useSelector } from "react-redux";
+import { loginActions } from "../store/auth/loginSlice";
 
 export default function EditProfile() {
   const navigate = useNavigate();
+
+  const dispatch = useDispatch();
+  const userdetails = useSelector((state) => state.login.user);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,12 +25,18 @@ export default function EditProfile() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const userId = 10;
+        if (isTokenExpired(token)) {
+          dispatch(loginActions.logout());
+        }
+
+        const userId = userdetails.id;
+        console.log(userdetails.id);
 
         const response = await axios.get(
           `${BASE_URL}/user/getProfile.php?id=${userId}`,
@@ -64,7 +76,7 @@ export default function EditProfile() {
     };
 
     fetchProfile();
-  }, []);
+  }, [dispatch, userdetails]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,20 +86,30 @@ export default function EditProfile() {
     });
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setFormData({
-        ...formData,
-        profile_picture: file,
-      });
+    if (!file) return;
 
-      // Create preview for image
+    try {
+      setUploadingImage(true);
+
+      // Create preview for image right away
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+
+      // Save file to formData for later submission
+      setFormData({
+        ...formData,
+        profile_picture: file,
+      });
+
+      setUploadingImage(false);
+    } catch (err) {
+      setError("Error processing image: " + err.message);
+      setUploadingImage(false);
     }
   };
 
@@ -98,7 +120,7 @@ export default function EditProfile() {
 
     try {
       const token = localStorage.getItem("token");
-      const userId = 10;
+      const userId = userdetails.id;
 
       // Create FormData for file upload
       const data = new FormData();
@@ -112,20 +134,21 @@ export default function EditProfile() {
       data.append("id", userId);
 
       const response = await axios.post(
-        `${BASE_URL}/user/updateProfile.php?${userId}`,
+        `${BASE_URL}/user/updateProfile.php`,
         data,
         {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
+          params: { id: userId },
         }
       );
 
       if (response.data.success) {
         setSuccess("Profile updated successfully");
         setTimeout(() => {
-          navigate("/profile");
+          navigate("/profile", { state: { updated: true } });
         }, 2000);
       } else {
         setError("Failed to update profile: " + response.data.message);
@@ -164,6 +187,7 @@ export default function EditProfile() {
     "Turkish",
     "Dutch",
     "Swedish",
+    "Telugu",
   ];
 
   return (
@@ -248,7 +272,31 @@ export default function EditProfile() {
               <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-6 gap-x-6">
                 {/* Profile Picture Section */}
                 <div className="sm:col-span-6 flex flex-col items-center">
-                  <div className="h-40 w-40 rounded-full overflow-hidden bg-gray-100 mb-4">
+                  <div className="h-40 w-40 rounded-full overflow-hidden bg-gray-100 mb-4 relative">
+                    {uploadingImage ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-70">
+                        <svg
+                          className="animate-spin h-8 w-8 text-blue-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </div>
+                    ) : null}
                     {imagePreview ? (
                       <img
                         src={imagePreview}
@@ -454,7 +502,7 @@ export default function EditProfile() {
                 </Link>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || uploadingImage}
                   className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-blue-300"
                 >
                   {loading ? "Saving..." : "Save Changes"}

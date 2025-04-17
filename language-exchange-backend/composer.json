@@ -1,6 +1,7 @@
 {
     "require": {
         "cboden/ratchet": "^0.4.4",
-        "firebase/php-jwt": "^6.11"
+        "firebase/php-jwt": "^6.11",
+        "cloudinary/cloudinary_php": "^3.1"
     }
 }
